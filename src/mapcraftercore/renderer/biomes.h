@@ -35,7 +35,7 @@ namespace renderer {
 
 class RGBAImage;
 enum class ColorMapType;
-class ColorMap;
+struct ColorMap;
 
 static const uint32_t one = rgba(0xff, 0xff, 0xff, 0xff);
 static const uint32_t default_water = rgba(0x30, 0x59, 0xad, 0xff);

@@ -47,7 +47,7 @@ class Chunk;
 namespace renderer {
 
 class BlockImages;
-class BlockImage;
+struct BlockImage;
 class RGBAImage;
 
 /**

@@ -158,9 +158,9 @@ void TileRenderer::renderBlocks(int x, int y, mc::BlockPos top, const mc::BlockP
 				|| full_water_like_ids.count(id)
 				|| block_images->getBlockImage(id).is_waterlogged;
 		};
-		auto is_ice = [this](uint16_t id) -> bool {
-			return block_images->getBlockImage(id).is_ice;
-		};
+		// auto is_ice = [this](uint16_t id) -> bool {
+		// 	return block_images->getBlockImage(id).is_ice;
+		// };
 
 		if (full_water_ids.count(id)) {
 			uint16_t up = getBlock(top + mc::DIR_TOP).id;
@@ -292,13 +292,11 @@ uint32_t TileRenderer::getBiomeColor(const mc::BlockPos& pos, const BlockImage& 
 	float f = ((2*radius+1)*(2*radius+1));
 	float r = 0.0, g = 0.0, b = 0.0;
 
-	int n = 0;
 	for (int dx = -radius; dx <= radius; dx++) {
 		for (int dz = -radius; dz <= radius; dz++) {
 			mc::BlockPos other = pos + mc::BlockPos(dx, dz, 0);
 			mc::ChunkPos chunk_pos(other);
 			
-			const BlockImage* other_block;
 			uint16_t biome_id;
 			mc::LocalBlockPos local(other);
 			if (chunk_pos != chunk->getPos()) {
