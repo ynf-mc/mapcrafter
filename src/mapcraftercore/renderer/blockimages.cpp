@@ -398,8 +398,8 @@ void blockImageBlendTop(RGBAImage& block, const RGBAImage& uv_mask,
 		// compare uv-coords of block vs. waterlog pixels
 		// if the uv-coords are the same and both textures pointing up, don't show water here
 		
-		// because we assume that top texture contains only the up-texture, "!=" does the job
-		if (uv_pixel != top_uv_pixel) {
+		// use the Z value of each pixels to blend or not the top pixel
+		if (rgba_alpha(uv_pixel) < rgba_alpha(top_uv_pixel)) {
 			blend(pixel, top_pixel);
 		}
 	}
@@ -477,7 +477,7 @@ bool blockImageIsTransparent(RGBAImage& block, const RGBAImage& uv_mask) {
 				continue;
 			}
 
-			if (rgba_alpha(pixel) != rgba_alpha(uv_pixel)) {
+			if (rgba_alpha(pixel) != 255) {
 				return true;
 			}
 		}
