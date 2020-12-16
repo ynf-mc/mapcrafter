@@ -318,7 +318,11 @@ void blockImageTint(RGBAImage& block, const RGBAImage& mask, uint32_t color) {
 		}
 		*/
 		if ((mask_pixel & 0xff000000) > 0) {
-			pixel = rgba_multiply(mask_pixel, color);
+			// The mask is not supposed to be transfered directly
+			// but to be blend in with block pixel
+			// This will avoid white pixels on edges of the mask
+			RGBAPixel colored_mask_pixel = rgba_multiply(mask_pixel, color);
+			blend(pixel, colored_mask_pixel);
 		}
 	}
 }
@@ -401,6 +405,12 @@ void blockImageBlendTop(RGBAImage& block, const RGBAImage& uv_mask,
 		// use the Z value of each pixels to blend or not the top pixel
 		if (rgba_alpha(uv_pixel) < rgba_alpha(top_uv_pixel)) {
 			blend(pixel, top_pixel);
+		} else {
+			// The top pixel is behind the block one, so use the alpha of
+			// the destination pixel to blend the top pixel behind
+			RGBAPixel tmp_pix = pixel;
+			pixel = top_pixel;
+			blend(pixel, tmp_pix);
 		}
 	}
 }
