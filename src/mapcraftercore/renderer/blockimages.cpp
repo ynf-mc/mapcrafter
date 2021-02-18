@@ -310,14 +310,9 @@ void blockImageTint(RGBAImage& block, const RGBAImage& mask, uint32_t color) {
 
 	size_t n = block.getWidth() * block.getHeight();
 	for (size_t i = 0; i < n; i++) {
-		uint32_t& pixel = block.data[i];
 		uint32_t mask_pixel = mask.data[i];
-		/*
-		if (rgba_alpha(mask_pixel) == 0) {
-			continue;
-		}
-		*/
-		if ((mask_pixel & 0xff000000) > 0) {
+		if (rgba_alpha(mask_pixel)) {
+			uint32_t& pixel = block.data[i];
 			// The mask is not supposed to be transfered directly
 			// but to be blend in with block pixel
 			// This will avoid white pixels on edges of the mask
@@ -330,7 +325,10 @@ void blockImageTint(RGBAImage& block, const RGBAImage& mask, uint32_t color) {
 void blockImageTint(RGBAImage& block, uint32_t color) {
 	size_t n = block.getWidth() * block.getHeight();
 	for (size_t i = 0; i < n; i++) {
-		block.data[i] = rgba_multiply(block.data[i], color);
+		uint32_t pixel = block.data[i];
+		if(rgba_alpha(pixel)) {
+			block.data[i] = rgba_multiply(pixel, color);
+		}
 	}
 }
 
@@ -677,6 +675,8 @@ bool RenderedBlockImages::loadBlockImages(fs::path path, std::string view, int r
 			block.lighting_type = util::as<LightingType>(block_info["lighting_type"]);
 		}
 		block.has_faulty_lighting = block_info.count("faulty_lighting");
+
+		block.can_partial = block_info.count("partial") ? block_info["partial"] == "true" : false;
 
 		block.shadow_edges = -1;
 		if (block_info.count("shadow_edges")) {
