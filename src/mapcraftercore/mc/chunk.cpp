@@ -241,7 +241,7 @@ bool Chunk::readNBT(mc::BlockStateRegistry& block_registry, const char* data, si
 			continue;
 		
 		const nbt::TagByte& y = section_tag.findTag<nbt::TagByte>("Y");
-		if (y.payload >= CHUNK_HEIGHT)
+		if (y.payload < CHUNK_LOW || y.payload >= CHUNK_TOP )
 			continue;
 		//const nbt::TagByteArray& blocks = section_tag.findTag<nbt::TagByteArray>("Blocks");
 		//const nbt::TagByteArray& data = section_tag.findTag<nbt::TagByteArray>("Data");
@@ -312,7 +312,7 @@ bool Chunk::readNBT(mc::BlockStateRegistry& block_registry, const char* data, si
 		}
 
 		// add this section to the section list
-		section_offsets[section.y] = sections.size();
+		section_offsets[section.y-CHUNK_LOW] = sections.size();
 		sections.push_back(section);
 	}
 
@@ -321,13 +321,13 @@ bool Chunk::readNBT(mc::BlockStateRegistry& block_registry, const char* data, si
 
 void Chunk::clear() {
 	sections.clear();
-	for (int i = 0; i < CHUNK_HEIGHT; i++)
+	for (int i = 0; i < sizeof(section_offsets)/sizeof(section_offsets[0]); i++)
 		section_offsets[i] = -1;
 	std::fill(biomes, biomes + 256, 21 /* DEFAULT_BIOME */);
 }
 
 bool Chunk::hasSection(int section) const {
-	return section < CHUNK_HEIGHT && section_offsets[section] != -1;
+	return section >= CHUNK_LOW && section < CHUNK_TOP && section_offsets[section-CHUNK_LOW] != -1;
 }
 
 void rotateBlockPos(int& x, int& z, int rotation) {
@@ -342,11 +342,11 @@ void rotateBlockPos(int& x, int& z, int rotation) {
 
 uint16_t Chunk::getBlockID(const LocalBlockPos& pos, bool force) const {
 	// at first find out the section and check if it's valid and contained
-	int section = pos.y / 16;
-	if (section >= CHUNK_HEIGHT || section_offsets[section] == -1)
+	int section = pos.y >> 4;
+	if (section < CHUNK_LOW || section >= CHUNK_TOP || section_offsets[section-CHUNK_LOW] == -1)
 		return air_id;
 	// FIXME sometimes this happens, fix this
-	//if (sections.size() > 16 || sections.size() <= (unsigned) section_offsets[section]) {
+	//if (sections.size() > 16 || sections.size() <= (unsigned) section_offsets[section-CHUNK_LOW]) {
 	//	return 0;
 	//}
 
@@ -362,8 +362,8 @@ uint16_t Chunk::getBlockID(const LocalBlockPos& pos, bool force) const {
 
 	// calculate the offset and get the block ID
 	// and don't forget the add data
-	int offset = ((pos.y % 16) * 16 + z) * 16 + x;
-	uint16_t id = sections[section_offsets[section]].block_ids[offset];
+	int offset = ((pos.y & 15) * 16 + z) * 16 + x;
+	uint16_t id = sections[section_offsets[section-CHUNK_LOW]].block_ids[offset];
 	if (!force && world_crop.hasBlockMask()) {
 		const BlockMask* mask = world_crop.getBlockMask();
 		BlockMask::BlockState block_state = mask->getBlockState(id);
@@ -392,8 +392,8 @@ bool Chunk::checkBlockWorldCrop(int x, int z, int y) const {
 
 uint8_t Chunk::getData(const LocalBlockPos& pos, int array, bool force) const {
 	// at first find out the section and check if it's valid and contained
-	int section = pos.y / 16;
-	if (section >= CHUNK_HEIGHT || section_offsets[section] == -1) {
+	int section = pos.y >> 4;
+	if (section < CHUNK_LOW || section >= CHUNK_TOP || section_offsets[section-CHUNK_LOW] == -1) {
 		 // not existing sections should always have skylight
 		 return array == 1 ? 15 : 0;
 	}
@@ -411,12 +411,12 @@ uint8_t Chunk::getData(const LocalBlockPos& pos, int array, bool force) const {
 
 	uint8_t data = 0;
 	// calculate the offset and get the block data
-	int offset = ((pos.y % 16) * 16 + z) * 16 + x;
+	int offset = ((pos.y & 15) * 16 + z) * 16 + x;
 	// handle bottom/top nibble
 	if ((offset % 2) == 0)
-		 data = sections[section_offsets[section]].getArray(array)[offset / 2] & 0xf;
+		 data = sections[section_offsets[section-CHUNK_LOW]].getArray(array)[offset / 2] & 0xf;
 	else
-		 data = (sections[section_offsets[section]].getArray(array)[offset / 2] >> 4) & 0x0f;
+		 data = (sections[section_offsets[section-CHUNK_LOW]].getArray(array)[offset / 2] >> 4) & 0x0f;
 	if (!force && world_crop.hasBlockMask()) {
 		 const BlockMask* mask = world_crop.getBlockMask();
 		 if (mask->isHidden(getBlockID(pos, true), data)) {
@@ -437,7 +437,8 @@ uint8_t Chunk::getSkyLight(const LocalBlockPos& pos) const {
 uint8_t Chunk::getBiomeAt(const LocalBlockPos& pos) const {
 	int x = pos.x / 4;
 	int z = pos.z / 4;
-	int y = pos.y / 4;
+	int y = (pos.y - CHUNK_LOW*16) / 4;
+	assert(y>= 0 && y<(CHUNK_TOP-CHUNK_LOW)*16/4);
 
 	if (rotation)
 		rotateBlockPos(x, z, rotation);

@@ -129,7 +129,7 @@ int TileRenderer::getTileHeight() const {
 }
 
 void TileRenderer::renderBlocks(int x, int y, mc::BlockPos top, const mc::BlockPos& dir, std::set<TileImage>& tile_images) {
-	for (; top.y >= 0 ; top += dir) {
+	for (; top.y >= mc::CHUNK_LOW*16 ; top += dir) {
 		// get current chunk position
 		mc::ChunkPos current_chunk_pos(top);
 
