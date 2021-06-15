@@ -164,6 +164,7 @@ static const Biome BIOMES[] = {
 	{170, 2.0, 0.0},   // Soul Sand Valley
 	{171, 2.0, 0.0},   // Crimson Forest
 	{172, 2.0, 0.0},   // Warped Forest
+	{173, 2.0, 0.0},   // Basalt Deltas
 
 	{210, 0.0, 0.0, unknown_tint, unknown_tint}, // "Unknown" biome
 };
